@@ -1,0 +1,74 @@
+# @gf3’s Sexy Bash Prompt, inspired by “Extravagant Zsh Prompt”
+# Shamelessly copied from https://github.com/gf3/dotfiles
+
+default_username='lars'
+
+if [[ $COLORTERM = gnome-* && $TERM = xterm ]] && infocmp gnome-256color >/dev/null 2>&1; then
+	export TERM=gnome-256color
+elif infocmp xterm-256color >/dev/null 2>&1; then
+	export TERM=xterm-256color
+fi
+
+if tput setaf 1 &> /dev/null; then
+	tput sgr0
+        prompt_bold=$(tput bold)
+        RESET=$(tput sgr0)
+	if [[ $(tput colors) -ge 256 ]] 2>/dev/null; then
+		MAGENTA=$prompt_bold$(tput setaf 27)
+		ORANGE=$prompt_bold$(tput setaf 1)
+		GREEN=$(tput setaf 154)
+		PURPLE=$(tput setaf 39)
+		WHITE=$prompt_bold$(tput setaf 256)
+	else
+		MAGENTA=$prompt_bold$(tput setaf 4)
+		ORANGE=$prompt_bold$(tput setaf 2)
+		GREEN=$prompt_bold$(tput setaf 2)
+		PURPLE=$(tput setaf 6)
+		WHITE=$prompt_bold$(tput setaf 7)
+	fi
+else
+	MAGENTA="\033[1;34m"
+	ORANGE="\033[1;32m"
+	GREEN="\033[1;32m"
+	PURPLE="\033[1;36m"
+	WHITE="\033[1;37m"
+	RESET="\033[m"
+fi
+
+
+function git_info() {
+	# check if we're in a git repo
+	git rev-parse --is-inside-work-tree &>/dev/null || return
+
+	# quickest check for what branch we're on
+	branch=$(git symbolic-ref -q HEAD | sed -e 's|^refs/heads/||')
+
+	# check if it's dirty (via github.com/sindresorhus/pure)
+	dirty=$(git diff --quiet --ignore-submodules HEAD &>/dev/null; [ $? -eq 1 ]&& echo -e "*")
+
+	echo $WHITE" on "$RESET$PURPLE$branch$dirty
+}
+
+# Only show username/host if not default
+function usernamehost() {
+	if [ $USER != "$default_username" ]; then echo "${MAGENTA}$USER ${WHITE}at ${ORANGE}$HOSTNAME ${WHITE}in "; fi
+}
+
+# bash completion.
+ if [ -f `brew --prefix`/etc/bash_completion ]; then
+    . `brew --prefix`/etc/bash_completion
+ fi
+
+
+# iTerm Tab and Title Customization and prompt customization
+# http://sage.ucsc.edu/xtal/iterm_tab_customization.html
+
+# Put the string " [bash]   hostname::/full/directory/path"
+# in the title bar using the command sequence
+# \[\e]2;[bash]   \h::\]$PWD\[\a\]
+
+# Put the penultimate and current directory
+# in the iterm tab
+# \[\e]1;\]$(basename $(dirname $PWD))/\W\[\a\]
+
+PS1="\[\e]2;$PWD\[\a\]\[\e]1;\]$(basename "$(dirname "$PWD")")/\W\[\a\]\$(usernamehost)\[$GREEN\]\w\$(git_info)\[$WHITE\]\n\$ \[$RESET\]"
